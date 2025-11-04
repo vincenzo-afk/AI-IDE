@@ -1,0 +1,9 @@
+{
+  "name": "Copy of Copy of EVO-X: The Ultimate AI Successor",
+  "description": "A hyper-intelligent AI assistant that surpasses existing models in depth, adaptability, and functionality, built on the EVO-X framework.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

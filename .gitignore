@@ -2,5 +2,8 @@ node_modules
 dist
 .env
 .env.local
+data/store.json
 data/projects.json
+data/assets/*
+!data/assets/.gitkeep
 .DS_Store

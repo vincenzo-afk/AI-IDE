@@ -16,8 +16,9 @@ async function api(path, options = {}, cookie = ownerCookie) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (cookie) headers.Cookie = cookie;
   const response = await fetch(base + path, { ...options, headers });
+  const raw = await response.text();
   let body = null;
-  try { body = await response.json(); } catch { body = await response.text(); }
+  try { body = JSON.parse(raw); } catch { body = raw; }
   return { response, body };
 }
 

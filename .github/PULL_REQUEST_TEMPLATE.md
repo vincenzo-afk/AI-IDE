@@ -12,6 +12,7 @@ List the commands and manual checks you ran.
 
 ```bash
 npm install
+npm test
 npm run build
 ```
 

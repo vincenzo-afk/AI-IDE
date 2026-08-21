@@ -24,7 +24,7 @@ async function api(path, options = {}, cookie = ownerCookie) {
 
 before(async () => {
   dataDir = mkdtempSync(join(tmpdir(), 'forgehouse-test-'));
-  const app = createApp({ dataDir });
+  const app = createApp({ dataDir, generationDelay: 100 });
   server = await new Promise(resolve => { const instance = app.listen(0, '127.0.0.1', () => resolve(instance)); });
   base = 'http://127.0.0.1:' + server.address().port;
 });
@@ -74,6 +74,16 @@ test('project creation and generation jobs create durable revisions', async () =
   assert.equal(result.body.job.status, 'succeeded');
   assert.equal(result.body.project.revisions.length, 2);
   assert.match(result.body.project.revisions[0].files.find(file => file.path === 'styles.css').content, /#8fc5d8/);
+});
+
+test('queued generation jobs can be cancelled before execution', async () => {
+  const started = await api('/api/projects/' + project.id + '/generate', { method: 'POST', body: JSON.stringify({ prompt: 'Make a queued change' }) });
+  assert.equal(started.response.status, 202);
+  const cancelled = await api('/api/projects/' + project.id + '/jobs/' + started.body.job.id + '/cancel', { method: 'POST' });
+  assert.equal(cancelled.response.status, 200);
+  assert.equal(cancelled.body.job.status, 'cancelled');
+  const status = await api('/api/projects/' + project.id + '/jobs/' + started.body.job.id);
+  assert.equal(status.body.job.status, 'cancelled');
 });
 
 test('restore, asset validation, publication, and public CSP work together', async () => {

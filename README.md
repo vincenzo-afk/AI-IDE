@@ -12,7 +12,7 @@
 
 Forgehouse is a conversational AI website studio for creating, revising, previewing, and publishing browser-rendered websites. It is designed around the fast feedback loop associated with products such as Lovable and Bolt: a user describes a change, the server produces a safe revision, and the result appears immediately in an isolated preview.
 
-> **Current release status:** Forgehouse is an early production foundation. The live preview, revision, publishing, and Groq integration paths are implemented; authentication, durable database storage, rate limiting, and independent per-project deployment still require production hardening before a multi-user launch.
+> **Current release status:** Forgehouse now includes production-MVP foundations for account sessions, per-user project ownership, persistent storage, generation jobs, asset validation, rate limits, hardened publishing, and automated API verification. A managed database, object storage, external job queue, and independent per-project deployments remain future infrastructure upgrades.
 
 ## <a name="table-of-contents"></a>Table of Contents
 
@@ -50,7 +50,11 @@ The current starter experience is a responsive editorial landing page for a fict
 - **Immutable revisions:** retain previous versions and restore them by creating a new revision instead of deleting history.
 - **Application-hosted publishing:** publish the selected revision at `/sites/:slug`.
 - **Server-side secret handling:** keep Groq credentials out of Vite bundles and client-side code.
-- **Build verification:** run the production Vite build automatically through GitHub Actions.
+- **Build verification:** run the production Vite build and end-to-end API suite automatically through GitHub Actions.
+- **Authentication:** register, sign in, sign out, and scope private projects to the authenticated owner.
+- **Generation jobs:** observe queued, running, succeeded, failed, and cancelled states.
+- **Asset handling:** upload validated image assets to protected project storage.
+- **Operational controls:** use request IDs, readiness checks, rate limits, and safe error responses.
 
 ### Architecture overview
 
@@ -112,6 +116,7 @@ Copy `.env.example` to `.env` and add values for the server process. Do not pref
 | `GROQ_API_KEY` | No for fallback mode; yes for Groq generation | Empty | Server-only Groq credential |
 | `GROQ_MODEL` | No | `openai/gpt-oss-20b` | Groq model identifier used for structured site changes |
 | `PORT` | No | `8787` | Express API and public-site server port |
+| `FORGEHOUSE_DATA_DIR` | No | `./data` | Persistent directory for the JSON store and local assets |
 
 ### Production build
 
@@ -132,7 +137,7 @@ The current development persistence layer creates `data/projects.json` on first 
 
 ### Build and revise a site
 
-1. Open the Forgehouse workspace.
+1. Register or sign in to the Forgehouse workspace.
 2. Choose an existing project or select **New project**.
 3. Enter a request in the composer, for example `Change the palette to ocean blue`.
 4. Select **Build change** or press `Command/Ctrl + Enter`.
@@ -174,13 +179,21 @@ The API currently has no authentication layer. Treat the development server as a
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/api/health` | Returns server health and whether `GROQ_API_KEY` is configured. |
-| `GET` | `/api/projects` | Returns the current project collection. |
+| `POST` | `/api/auth/register` | Creates an account and sets an HTTP-only session cookie. |
+| `POST` | `/api/auth/login` | Starts an authenticated session. |
+| `POST` | `/api/auth/logout` | Ends the current session. |
+| `GET` | `/api/auth/me` | Returns the current safe user state. |
+| `GET` | `/api/projects` | Returns the authenticated user’s project collection. |
 | `POST` | `/api/projects` | Creates a project with the starter site revision. |
 | `GET` | `/api/projects/:id` | Returns one project by identifier. |
-| `POST` | `/api/projects/:id/generate` | Creates a revision from a prompt using Groq or the safe local fallback. |
+| `POST` | `/api/projects/:id/generate` | Queues a revision job using Groq or the safe local fallback. |
+| `GET` | `/api/projects/:id/jobs/:jobId` | Returns job status and the resulting project after success. |
+| `POST` | `/api/projects/:id/jobs/:jobId/cancel` | Cancels queued or running work. |
 | `POST` | `/api/projects/:id/revisions/:revisionId/restore` | Creates a new revision from an earlier revision. |
 | `POST` | `/api/projects/:id/publish` | Publishes the current revision. |
 | `POST` | `/api/projects/:id/unpublish` | Removes the project from the public route. |
+| `POST` | `/api/projects/:id/assets` | Validates and stores an image asset for the project. |
+| `GET` | `/api/assets/:id` | Serves an authorized or published asset. |
 | `GET` | `/sites/:slug` | Serves the published revision as a browser-rendered HTML page. |
 
 ### Health response
@@ -253,10 +266,11 @@ See the [open issues](https://github.com/vincenzo-afk/AI-IDE/issues) for tracked
 
 ## <a name="testing-and-ci"></a>Testing and CI
 
-The current repository does not define a `test` or `lint` script. The verified automated check is the production build:
+The repository defines a Node integration test suite and a production build check:
 
 ```bash
 npm install
+npm test
 npm run build
 ```
 
@@ -276,7 +290,7 @@ npm run build
 PORT=8787 GROQ_API_KEY=your_key GROQ_MODEL=openai/gpt-oss-20b npm start
 ```
 
-The current repository does not contain a provider-specific deployment manifest. Configure the platform’s start command as `npm start`, expose the configured `PORT`, and provide `GROQ_API_KEY` through the provider’s secret manager. Do not commit `.env` files or API keys. For a production multi-user service, add a managed database, persistent storage, authentication, rate limiting, structured logs, and a dedicated untrusted-content isolation strategy before public launch.
+The current repository does not contain a provider-specific deployment manifest. Configure the platform’s start command as `npm start`, expose the configured `PORT`, provide `GROQ_API_KEY` through the provider’s secret manager, and mount a persistent volume at `FORGEHOUSE_DATA_DIR` when using the JSON storage adapter. Do not commit `.env` files or API keys. For a production multi-user service, add a managed database, persistent storage, authentication, rate limiting, structured logs, and a dedicated untrusted-content isolation strategy before public launch.
 
 ---
 
@@ -294,7 +308,7 @@ Every pull request should explain the behavior change, list verification command
 
 Forgehouse handles untrusted natural-language prompts and model-produced site files. The generation pipeline limits file paths to browser-safe project files, caps prompt and file sizes, stores revisions transactionally, keeps the Groq key server-side, and renders previews in a sandboxed iframe. Public pages add a restrictive content security policy.
 
-The current application is not yet a multi-user production service because it has no authentication, authorization, rate limiting, or managed persistence. Do not expose the development API to the public internet without adding those controls.
+The application now has account sessions, per-user ownership checks, request throttling, and persistent local storage. For a public multi-user launch, replace the local JSON adapter with a managed database and object storage, add a durable worker queue, and configure production session and observability infrastructure.
 
 Please report vulnerabilities privately through the repository’s [security advisory workflow](https://github.com/vincenzo-afk/AI-IDE/security/advisories/new) rather than opening a public issue. See [SECURITY.md](SECURITY.md) for supported versions and reporting expectations.
 

@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,4 +18,5 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - run: npm test
       - run: npm run build

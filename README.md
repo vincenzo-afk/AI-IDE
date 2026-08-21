@@ -1,20 +1,21 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Forgehouse AI Website Studio
 
-# Run and deploy your AI Studio app
+Forgehouse is a Lovable/Bolt-style conversational website builder rebuilt from the original AI-IDE client. It combines an AI build workspace, immutable revisions, a live preview, and public site URLs under `/sites/:slug`.
 
-This contains everything you need to run your app locally.
+## Run locally
 
-View your app in AI Studio: https://ai.studio/apps/drive/1IQ4mBx6j8Fnc2XuWs-sH34MAZ_UX1Bpq
+Install dependencies with `npm install`. Add a Groq key later as `GROQ_API_KEY` and select a model with `GROQ_MODEL`. Start the workspace with `npm run dev`; the API uses port 8787 and the frontend uses port 3000.
 
-## Run Locally
+Build with `npm run build` and serve with `npm start`. Projects and revisions are persisted in `data/projects.json`, which is ignored from version control.
 
-**Prerequisites:**  Node.js
+## Product model
 
+Every instruction creates an immutable revision. The current revision renders in a sandboxed iframe. Publish records the revision that powers `/sites/:slug`. Restoring a revision creates a new revision, so history is never destroyed.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Groq configuration
+
+The generation endpoint includes a deterministic safe-preview fallback before a key is configured. The server-side Groq adapter will use `GROQ_API_KEY`; never place it in Vite defines, client code, or committed files.
+
+## Rollback
+
+The original repository source is preserved on `backup-before-ai-builder-2026-08-21`.

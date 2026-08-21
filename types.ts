@@ -15,7 +15,7 @@ export function buildSrcDoc(files: SiteFile[]) {
   const html = files.find(file => file.path === 'index.html')?.content || '<main><h1>Your site is ready.</h1></main>';
   const css = files.find(file => file.path === 'styles.css')?.content || '';
   const js = files.find(file => file.path === 'script.js')?.content || '';
-  return '<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + css.replace(/<\\/style/gi, '<\\/style') + '</style></head><body>' + html + '<script>' + js.replace(/<\\/script/gi, '<\\/script') + '<\\/script></body></html>';
+  return '<!doctype html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>' + css.replaceAll('</style', '<\\/style') + '</style></head><body>' + html + '<script>' + js.replaceAll('</script', '<\\/script') + '</script></body></html>';
 }
 export function localUpdate(files: SiteFile[], prompt: string): SiteFile[] {
   const next = files.map(file => ({ ...file }));

@@ -24,7 +24,7 @@ async function api(path, options = {}, cookie = ownerCookie) {
 
 before(async () => {
   dataDir = mkdtempSync(join(tmpdir(), 'forgehouse-test-'));
-  const app = createApp({ dataDir, generationDelay: 100 });
+  const app = createApp({ dataDir, generationDelay: 100, projectCreateLimit: 2 });
   server = await new Promise(resolve => { const instance = app.listen(0, '127.0.0.1', () => resolve(instance)); });
   base = 'http://127.0.0.1:' + server.address().port;
 });
@@ -55,6 +55,14 @@ test('registration creates a session and private project access is enforced', as
   assert.ok(projects.body.some(item => item.ownerId === owner.id));
   const unauthenticated = await api('/api/projects', {}, null);
   assert.equal(unauthenticated.response.status, 401);
+});
+
+test('project creation rate limits return retry guidance', async () => {
+  const first = await api('/api/projects', { method: 'POST', body: JSON.stringify({ name: 'Rate one' }) });
+  assert.equal(first.response.status, 201);
+  const blocked = await api('/api/projects', { method: 'POST', body: JSON.stringify({ name: 'Rate two' }) });
+  assert.equal(blocked.response.status, 429);
+  assert.ok(Number(blocked.response.headers.get('retry-after')) > 0);
 });
 
 test('project creation and generation jobs create durable revisions', async () => {

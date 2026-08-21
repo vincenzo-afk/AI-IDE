@@ -1,77 +1,30 @@
-import { GroundingChunk as ApiGroundingChunk } from '@google/genai';
+export type SiteFile = { path: string; content: string };
+export type Revision = { id: string; label: string; prompt: string; summary: string; createdAt: string; files: SiteFile[] };
+export type Project = { id: string; name: string; slug: string; description: string; status: 'draft' | 'published'; updatedAt: string; publishedAt?: string; publishedRevisionId?: string; currentRevisionId: string; revisions: Revision[] };
+export type Device = 'desktop' | 'tablet' | 'mobile';
 
-// Re-exporting to allow for potential future customizations or extensions.
-export type GroundingChunk = ApiGroundingChunk;
+export const starterFiles: SiteFile[] = [
+  { path: 'index.html', content: '<main class="site-shell"><nav class="nav"><div class="wordmark">NORTHSTAR</div><div class="nav-links"><a href="#work">Work</a><a href="#about">About</a><a class="nav-cta" href="#contact">Start a project</a></div></nav><section class="hero"><div class="eyebrow">Independent digital studio · 2026</div><h1>We make brands<br><em>impossible</em> to ignore.</h1><p class="hero-copy">Northstar builds clear, magnetic identities for teams moving the culture forward.</p><a class="button" href="#work">Explore the work <span>↗</span></a></section><section id="work" class="work-grid"><article class="work-card work-card-tall"><span>01 / Identity</span><h2>Soft power<br>for hard problems.</h2><div class="orb orb-coral"></div></article><article class="work-card work-card-dark"><span>02 / Digital</span><h2>A sharper<br>point of view.</h2><div class="orb orb-lilac"></div></article><article class="work-card work-card-wide"><span>03 / Campaign</span><h2>Make room<br>for the next.</h2><div class="orb orb-blue"></div></article></section><section id="about" class="manifesto"><div class="eyebrow">The Northstar method</div><p>Small teams. Big swings. We turn the messy middle into a visual system people can feel.</p></section><footer id="contact"><div class="wordmark">NORTHSTAR</div><a href="mailto:hello@northstar.studio">hello@northstar.studio ↗</a></footer></main>' },
+  { path: 'styles.css', content: ':root{font-family:Inter,Arial,sans-serif;color:#17171a;background:#f3f1ec}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0}.site-shell{max-width:1180px;margin:auto;padding:28px 42px}.nav{display:flex;justify-content:space-between;align-items:center}.wordmark{font-size:13px;letter-spacing:.17em;font-weight:800}.nav-links{display:flex;gap:28px;align-items:center;font-size:12px}.nav a{color:inherit;text-decoration:none}.nav-cta{border:1px solid #17171a;border-radius:999px;padding:10px 15px}.hero{padding:146px 0 118px;max-width:940px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.16em;opacity:.58}.hero h1{font-size:clamp(58px,9vw,126px);line-height:.92;letter-spacing:-.075em;margin:24px 0 30px;font-weight:700}.hero h1 em{font-family:Georgia,serif;font-weight:400;letter-spacing:-.09em}.hero-copy{font-size:18px;line-height:1.5;max-width:390px;margin-bottom:30px}.button{display:inline-flex;gap:22px;align-items:center;background:#17171a;color:#fff;padding:15px 18px;text-decoration:none;border-radius:999px;font-size:13px}.work-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.work-card{min-height:310px;padding:24px;position:relative;overflow:hidden;border-radius:4px}.work-card span{font-size:10px;text-transform:uppercase;letter-spacing:.12em;position:relative;z-index:2}.work-card h2{font-size:36px;line-height:.95;letter-spacing:-.055em;margin-top:105px;position:relative;z-index:2}.work-card-tall{background:#f2a38d;min-height:430px}.work-card-dark{background:#191d2a;color:white}.work-card-wide{background:#c9c2f8;grid-column:1 / -1;min-height:360px}.orb{position:absolute;width:260px;height:260px;border-radius:50%;filter:blur(2px);opacity:.76;right:-35px;bottom:-85px}.orb-coral{background:#f9dbc5}.orb-lilac{background:#7065d7;right:15%;top:10%}.orb-blue{background:#678cff;width:390px;height:390px;right:13%;bottom:-200px}.manifesto{padding:170px 0 140px;display:grid;grid-template-columns:1fr 2fr;gap:20px}.manifesto p{font-size:clamp(32px,5vw,66px);line-height:.98;letter-spacing:-.06em;margin:0}.manifesto+footer,footer{border-top:1px solid #c5c1b8;padding:24px 0;display:flex;justify-content:space-between;font-size:12px}footer a{color:inherit;text-decoration:none}@media(max-width:700px){.site-shell{padding:22px}.nav-links a:not(.nav-cta){display:none}.hero{padding:110px 0 90px}.work-grid{grid-template-columns:1fr}.work-card-wide{grid-column:auto}.manifesto{display:block;padding:110px 0}.manifesto p{margin-top:28px}}' }
+];
 
-// For use with the Live API, which expects this shape but doesn't export the type.
-// This avoids conflict with the browser's built-in Blob type in terms of usage.
-export interface Blob {
-    data: string; // base64 encoded bytes
-    mimeType: string;
+export function makeSlug(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 46) || 'untitled-site'; }
+export function formatDate(value: string) { return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value)); }
+export function currentRevision<T extends { currentRevisionId: string; revisions: { id: string }[] }>(project: T) { return project.revisions.find(revision => revision.id === project.currentRevisionId) || project.revisions[0]; }
+export function buildSrcDoc(files: SiteFile[]) {
+  const html = files.find(file => file.path === 'index.html')?.content || '<main><h1>Your site is ready.</h1></main>';
+  const css = files.find(file => file.path === 'styles.css')?.content || '';
+  const js = files.find(file => file.path === 'script.js')?.content || '';
+  return '<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + css.replace(/<\\/style/gi, '<\\/style') + '</style></head><body>' + html + '<script>' + js.replace(/<\\/script/gi, '<\\/script') + '<\\/script></body></html>';
 }
-
-export interface ChatMessage {
-  role: 'user' | 'model';
-  text: string;
-  image?: {
-    base64: string;
-    mimeType: string;
-  };
-  groundingChunks?: GroundingChunk[];
-}
-
-export interface ChatSession {
-  id: string;
-  title: string;
-  messages: ChatMessage[];
-}
-
-export interface DevToolsSettings {
-  systemInstruction: string;
-  temperature: number;
-  topP: number;
-  topK: number;
-}
-
-export enum Tab {
-  CHAT = 'chat',
-  IMAGE = 'image',
-  VIDEO = 'video',
-  LIVE = 'live',
-  VOICE = 'voice',
-  TTS_STUDIO = 'tts',
-  DOCUMENT = 'document',
-  CONTROL_PANEL = 'control',
-  CODE_CORE = 'codecore',
-  DEV_TOOLS = 'devtools',
-}
-
-export interface PlaylistItem {
-  id: string;
-  name: string;
-  base64Audio: string;
-  source: string; // e.g., "Voice Assistant" or "TTS Studio"
-}
-
-export interface DocumentFile {
-    name: string;
-    content: string; // Base64 for media, text content for text files
-    mimeType: string;
-    type: 'text' | 'image' | 'audio' | 'video' | 'pdf';
-    previewUrl?: string; // For Object URLs of audio/video
-}
-
-export interface FileSystemNode {
-  id: string;
-  name: string;
-  type: 'file' | 'folder';
-  parentId: string | null;
-  content?: string; // For files only
-  isOpen?: boolean; // For folders only (UI state)
-}
-
-export interface CodeCoreWorkspace {
-  nodes: FileSystemNode[];
-  openFileIds: string[];
-  activeFileId: string | null;
+export function localUpdate(files: SiteFile[], prompt: string): SiteFile[] {
+  const next = files.map(file => ({ ...file }));
+  const lower = prompt.toLowerCase();
+  const css = next.find(file => file.path === 'styles.css');
+  const html = next.find(file => file.path === 'index.html');
+  if (css && (lower.includes('blue') || lower.includes('ocean'))) css.content = css.content.replace('#f2a38d', '#8fc5d8').replace('#c9c2f8', '#b9d5ef');
+  if (css && (lower.includes('dark') || lower.includes('black'))) css.content = css.content.replace('background:#f3f1ec', 'background:#111319').replace('color:#17171a', 'color:#f6f3ed');
+  if (css && (lower.includes('green') || lower.includes('forest'))) css.content = css.content.replace('#f2a38d', '#9dc7a9').replace('#c9c2f8', '#d4e4c8');
+  if (html && lower.includes('headline')) html.content = html.content.replace('We make brands<br><em>impossible</em> to ignore.', 'Ideas with<br><em>gravity.</em>');
+  return next;
 }

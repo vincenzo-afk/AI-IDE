@@ -57,14 +57,6 @@ test('registration creates a session and private project access is enforced', as
   assert.equal(unauthenticated.response.status, 401);
 });
 
-test('project creation rate limits return retry guidance', async () => {
-  const first = await api('/api/projects', { method: 'POST', body: JSON.stringify({ name: 'Rate one' }) });
-  assert.equal(first.response.status, 201);
-  const blocked = await api('/api/projects', { method: 'POST', body: JSON.stringify({ name: 'Rate two' }) });
-  assert.equal(blocked.response.status, 429);
-  assert.ok(Number(blocked.response.headers.get('retry-after')) > 0);
-});
-
 test('project creation and generation jobs create durable revisions', async () => {
   const created = await api('/api/projects', { method: 'POST', body: JSON.stringify({ name: 'Launch project', description: 'A launch page' }) });
   assert.equal(created.response.status, 201);
@@ -82,6 +74,14 @@ test('project creation and generation jobs create durable revisions', async () =
   assert.equal(result.body.job.status, 'succeeded');
   assert.equal(result.body.project.revisions.length, 2);
   assert.match(result.body.project.revisions[0].files.find(file => file.path === 'styles.css').content, /#8fc5d8/);
+});
+
+test('project creation rate limits return retry guidance', async () => {
+  const first = await api('/api/projects', { method: 'POST', body: JSON.stringify({ name: 'Rate one' }) });
+  assert.equal(first.response.status, 201);
+  const blocked = await api('/api/projects', { method: 'POST', body: JSON.stringify({ name: 'Rate two' }) });
+  assert.equal(blocked.response.status, 429);
+  assert.ok(Number(blocked.response.headers.get('retry-after')) > 0);
 });
 
 test('queued generation jobs can be cancelled before execution', async () => {

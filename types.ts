@@ -1,3 +1,4 @@
+export type User = { id: string; email: string; name: string };
 export type SiteFile = { path: string; content: string };
 export type Revision = { id: string; label: string; prompt: string; summary: string; createdAt: string; files: SiteFile[] };
 export type Project = { id: string; name: string; slug: string; description: string; status: 'draft' | 'published'; updatedAt: string; publishedAt?: string; publishedRevisionId?: string; currentRevisionId: string; revisions: Revision[] };

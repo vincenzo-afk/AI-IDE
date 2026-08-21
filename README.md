@@ -174,7 +174,7 @@ After publication, open `http://localhost:8787/sites/PROJECT_SLUG`.
 
 ## <a name="api-reference"></a>API Reference
 
-The API currently has no authentication layer. Treat the development server as a trusted local process until authentication and authorization are added.
+The API uses HTTP-only sessions and per-user ownership checks for private project operations. Public site routes expose only published revisions. The current local JSON adapter and in-process job runner are suitable for a single instance; use a managed database, object storage, and durable worker for multi-instance production.
 
 | Method | Path | Description |
 |---|---|---|
@@ -231,7 +231,7 @@ The API returns JSON errors for missing projects, revisions, or prompts. A promp
 └── vite.config.ts               # Vite plugin, proxy, and development server
 ```
 
-`data/projects.json` and `dist/` are generated at runtime or build time and are intentionally excluded from version control.
+`data/store.json`, `data/assets/`, and `dist/` are generated at runtime or build time and are intentionally excluded from version control.
 
 ---
 
@@ -286,6 +286,7 @@ A generic deployment sequence is:
 
 ```bash
 npm install
+npm test
 npm run build
 PORT=8787 GROQ_API_KEY=your_key GROQ_MODEL=openai/gpt-oss-20b npm start
 ```
